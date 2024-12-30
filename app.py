@@ -383,6 +383,15 @@ def stream_translate_line(line, song_name, song_id):
             lyrics_cache.pop(next(iter(lyrics_cache)))
         save_cache()
 
+# Function to clear the lyrics cache
+def clear_cache():
+    global lyrics_cache
+    if os.path.exists(CACHE_FILE):
+        os.remove(CACHE_FILE)
+        print("Cache file deleted successfully")
+    lyrics_cache = {}
+    print("Cache cleared")
+
 # Start the application
 if __name__ == "__main__":
     import sys
@@ -390,6 +399,9 @@ if __name__ == "__main__":
         for arg in sys.argv[1:]:
             if arg == "inspect":
                 inspect_cache()
+                sys.exit()
+            elif arg == "clear-cache":
+                clear_cache()
                 sys.exit()
             elif arg == "no-cache":
                 USE_CACHE = False
