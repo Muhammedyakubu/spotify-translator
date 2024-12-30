@@ -243,14 +243,14 @@ def find_longest_line_lengths():
 
 # Function to adjust the column widths based on the content
 def adjust_column_widths():
-    min_time_width = 60  # Minimum width for the "Time" column
+    min_time_width = 50  # Minimum width for the "Time" column
     max_original_length, max_translated_length, line_count = find_longest_line_lengths()
 
     root.update_idletasks()
     width = tree.winfo_reqwidth()
 
-    orig_length=max_original_length*15
-    trans_length = max_translated_length * 15
+    orig_length=max_original_length*10
+    trans_length = max_translated_length * 10
 
     if language=="ja":
         orig_length=max_original_length*23
@@ -279,10 +279,10 @@ def adjust_column_widths():
     # get current width
     current_width = root.winfo_width()
 
-    tree.column("Time", width=min_time_width, minwidth=min_time_width)
-    tree.column("Original Lyrics", width=orig_length)
-    tree.column("Translated Lyrics", width=trans_length)
-    root.geometry(f"{current_width}x{height}")
+    tree.column("Time", width=60, minwidth=50, stretch=False)
+    tree.column("Original Lyrics", width=200, minwidth=100)
+    tree.column("Translated Lyrics", width=200, minwidth=100)
+    root.geometry(f"{current_width}x{height}") # there's no need to updated the window size esp if the user has updated it themselves.
 
 # Create main application window
 
