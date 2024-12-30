@@ -24,6 +24,7 @@ translation_complete = False
 translated_lyrics_cache = None
 language = ""
 translated_song_name = None
+streaming_mode = True  # New global variable to control streaming mode
 
 def debug_print(*args, **kwargs):
     if DEBUG_MODE:
@@ -189,10 +190,19 @@ def update_lyrics():
                 root.title(f"{song_name}: {translated_song_name}")
         else:
             debug_print(f"Starting new translation for {song_id}")
-            threading.Thread(
-                target=translate_words, 
-                args=(lyrics_data, song_name, song_id, update_translations)
-            ).start()
+            if streaming_mode:
+                # Start streaming translation for each line
+                for line in lyrics_data:
+                    threading.Thread(
+                        target=stream_translate_line,
+                        args=(line, song_name, song_id)
+                    ).start()
+            else:
+                # Use the original batch translation method
+                threading.Thread(
+                    target=translate_words, 
+                    args=(lyrics_data, song_name, song_id, update_translations)
+                ).start()
     else:
         tree.insert("", "end", values=("0:00", "(No lyrics)", ""))
         translated_song_name = None
@@ -342,6 +352,37 @@ def inspect_cache():
     else:
         print("No cache file found")
 
+# Add new function for streaming translation
+def stream_translate_line(line, song_name, song_id):
+    global translated_song_name
+    
+    translator = GoogleTranslator(source='auto', target='en')
+    
+    # Translate song name if not already translated
+    if translated_song_name is None:
+        translated_song_name = translator.translate(song_name)
+        root.title(f"{song_name}: {translated_song_name}")
+    
+    result = translate_line(translator, line)
+    
+    # Update UI immediately with the single translated line
+    for item in tree.get_children():
+        item_data = tree.item(item)
+        start_time = item_data['values'][0]
+        original_lyrics = item_data['values'][1]
+        if ms_to_min_sec(result['startTimeMs']) == start_time and result['words'] == original_lyrics:
+            tree.set(item, column="Translated Lyrics", value=result['translated'])
+            break
+    
+    # Update cache if enabled
+    if USE_CACHE:
+        if song_id not in lyrics_cache:
+            lyrics_cache[song_id] = []
+        lyrics_cache[song_id].append(result)
+        if len(lyrics_cache) > MAX_CACHE_SIZE:
+            lyrics_cache.pop(next(iter(lyrics_cache)))
+        save_cache()
+
 # Start the application
 if __name__ == "__main__":
     import sys
@@ -359,6 +400,9 @@ if __name__ == "__main__":
             elif arg == "threading":
                 USE_THREADING = True
                 debug_print("Multi-threaded mode enabled")
+            elif arg == "batch":
+                streaming_mode = False
+                debug_print("Batch mode enabled")
     root.mainloop()
 
 
